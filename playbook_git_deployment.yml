@@ -1,7 +1,7 @@
 - name: GIT DEPLOY PLAYBOOK
   hosts: localhost
   vars: 
-    ansible_python_interpreter: "/usr/bin/python2"
+    ansible_python_interpreter: "/usr/bin/python3"
     repository: "FrederickDetrezPXL/2TIN_ResearchProject"
     commitId: "420966cdc84f447892a196d0cc6542247caa8913"
 

@@ -1,7 +1,7 @@
 ---
 - hosts: localhost
   vars: 
-    ansible_python_interpreter: "/usr/bin/python2"
+    ansible_python_interpreter: "/usr/bin/python3"
     
   vars_files:
     - ./vars.yml
@@ -31,7 +31,7 @@
 
 - hosts: aws_ec2
   vars: 
-    ansible_python_interpreter: "/usr/bin/python2"
+    ansible_python_interpreter: "/usr/bin/python3"
     
   vars_files:
      - ./vars.yml

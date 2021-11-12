@@ -1,7 +1,7 @@
 ---
 - hosts: localhost
   vars: 
-    ansible_python_interpreter: "/usr/bin/python2"
+    ansible_python_interpreter: "/usr/bin/python3"
     
   vars_files:
     - ./vars.yml
@@ -26,7 +26,7 @@
     conn_details:
       - { host: "{{hostvars['localhost']['rds_dns_name']['stdout']}}", user: '{{VAULT_DB_MYSQL_USER}}', password: '{{VAULT_DB_MYSQL_PASSWORD}}' }
     db_script_file: "'{{ EC2_HOME_DIRECTORY }}'/db_script.sql"
-    ansible_python_interpreter: "/usr/bin/python2"
+    ansible_python_interpreter: "/usr/bin/python3"
     
   tasks:
     - name: Ensure db_script.sql is copied
