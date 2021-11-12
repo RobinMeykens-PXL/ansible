@@ -1,0 +1,91 @@
+#Ubuntu client VM op VirtualBox 
+#-------------------------------
+Vertrek van ubuntu-20.04.3-desktop-amd64.iso + guest additions
+
+#-------------------------------
+#Software installatie
+#-------------------------------
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install -y ansible
+ansible --version
+sudo apt-get install python3-pip
+python3 -m pip install boto3
+sudo apt install awscli
+pip3 install --upgrade awscli
+
+#-------------------------------
+#AWS credentials
+#-------------------------------
+zie ~/.aws 
+te configureren met "aws configure"
+
+#-------------------------------
+#SSH keypair
+#-------------------------------
+Aanmaken op AWS
+Key pair als PEM opslaan.
+Hernoem PEM file naar "id_rsa"
+Zet "id_rsa" in ~/.ssh
+chmod 400 id_rsa
+
+test: ssh ec2-user@<ipaddress van EC2 instance>
+
+#-------------------------------
+Ansible inventory file
+#-------------------------------
+aws_ec2.yml is de inventory file.
+=> geeft lijst van alle EC2 instances die als Webserver moeten draaien
+=> Lijst wordt gefiltered op tag "group" = "www"
+
+ansible-inventory -i aws_ec2.yml --graph
+@all:
+  |--@aws_ec2:
+  |  |--35.173.125.225
+  |  |--54.145.133.134
+  |--@ungrouped:
+
+#-------------------------------
+Ansible playbook
+#-------------------------------
+Installeert Apache op alle EC2 instances die als Webserver fungeren.
+
+ansible-playbook -i aws_ec2.yml playbook.yml -u ec2-user
+
+#-------------------------------
+run een playbook apart
+sudo ansible-playbook -i aws_ec2.yml -u ec2-user playbook_S3_images.yml 
+#-------------------------------
+
+#-------------------------------
+Database employees
+mysql -h pe-cloud-rds.cid764hu0iyl.us-east-1.rds.amazonaws.com -u admin -p
+#-------------------------------
+
+#-------------------------------
+Error log httpd
+sudo cat /var/log/httpd/error_log
+#-------------------------------
+
+#-------------------------------
+Error log php
+sudo cat /var/log/php-fsm/www-error.log
+#-------------------------------
+
+#-------------------------------
+Gebruik van de vault (paswoord = 'test')
+ansible-playbook -i aws_ec2.yml -u ec2-user playbook_<xxx>.yml --vault-id @prompt
+#-------------------------------
+
+
+
+
+
+
+
+
+
+
+

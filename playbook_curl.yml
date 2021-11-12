@@ -1,0 +1,12 @@
+---
+- name: CURL PLAYBOOK
+  hosts: aws_ec2
+  become: true
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+  tasks: 
+    - name: Ensure CURL is installed.
+      yum: 
+        name: 
+          - curl
+        state: present    

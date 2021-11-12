@@ -1,0 +1,33 @@
+---
+- name: PHP PLAYBOOK
+  hosts: aws_ec2
+  become: true
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+  tasks: 
+    - name: Ensure Amazon Linux Extras is installed.
+      become: yes 	    
+      yum: 
+        name: 
+          - amazon-linux-extras
+
+    - name: Ensure PHP 7.4 is enabled.
+      become: yes 	
+      shell: amazon-linux-extras enable php7.4 epel
+
+
+    - name: Ensure PHP is installed.
+      become: yes 	    
+      yum: 
+        name: 
+          - php-pecl-redis
+          - php-common
+          - php-mbstring
+          - php-xml
+          - php-cli
+          - php-mysqlnd
+          - php-process
+          - php-pear
+          - php-intl
+          - php-gd
+          - php-fpm

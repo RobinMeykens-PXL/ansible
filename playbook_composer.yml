@@ -1,0 +1,29 @@
+---
+- name: COMPOSER PLAYBOOK
+  hosts: aws_ec2
+  become: true
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+  tasks: 
+    - name: Validate Composer checksum
+      get_url:
+        checksum: "sha384:906a84df04cea2aa72f40b5f787e49f22d4c2f19492ac310e8cba5b96ac8b64115ac402c8cd292b8a03482574915d1a8"
+        dest: /usr/src/
+        url: https://getcomposer.org/installer
+      become: yes
+      
+    - name: Ensure Composer is downloaded and installed
+      shell: curl -sS https://getcomposer.org/installer | php
+      args:
+        chdir: /usr/src/
+        creates: /usr/local/bin/composer
+        warn: false
+
+    - name: Ensure Composer is added to global path
+      copy: 
+        dest: /usr/local/bin/composer
+        group: root
+        mode: '0755'
+        owner: root
+        src: /usr/src/composer.phar
+        remote_src: yes

@@ -1,0 +1,25 @@
+---
+- name: APACHE PLAYBOOK
+  hosts: aws_ec2
+  become: true
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+  tasks:   
+    - name: Ensure Apache HTTP server is installed.
+      yum: 
+        name: 
+          - httpd
+          - httpd-devel  
+        state: present    
+
+    - name: Ensure index.html is replaced by index.php in httpd.conf
+      replace:
+        dest: /etc/httpd/conf/httpd.conf
+        regexp: 'index.html'
+        replace: 'index.php'
+        
+    - name: Ensure Apache HTTP server is started.
+      service: 
+        name: httpd
+        state: started
+        enabled: true

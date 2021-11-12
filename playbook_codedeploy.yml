@@ -1,0 +1,33 @@
+- name: CODE DEPLOY PLAYBOOK
+  hosts: aws_ec2
+  become: true
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+   
+  tasks: 
+    - name: Ensure ruby is installed.
+      yum: 
+        name: 
+          - ruby
+        state: present 
+        
+    - name: Ensure wget is installed.
+      yum: 
+        name: 
+          - wget
+        state: present 
+   
+    - name: Ensure codedeploy installation file is downloaded. 
+      command: wget https://aws-codedeploy-us-east-1.s3.us-east-1.amazonaws.com/latest/install
+      
+    - name: Ensure ec2-user has access to installation file.
+      command: chown -R ec2-user ./install
+      
+    - name: Ensure ec2-user can install codedeploy.
+      command: chmod +x ./install
+      
+    - name: Ensure codedeploy is installed.	
+      command: ./install auto
+      
+    - name: Ensure codedeploy agent is started.	
+      command: service codedeploy-agent start

@@ -1,0 +1,11 @@
+- import_playbook: playbook_apache.yml
+- import_playbook: playbook_mysql.yml
+- import_playbook: playbook_curl.yml
+- import_playbook: playbook_git.yml
+- import_playbook: playbook_php.yml
+- import_playbook: playbook_unzip.yml
+- import_playbook: playbook_composer.yml
+- import_playbook: playbook_archive.yml
+- import_playbook: playbook_s3_images.yml
+- import_playbook: playbook_mysql_script.yml
+- import_playbook: playbook_codedeploy.yml

@@ -1,0 +1,102 @@
+---
+- hosts: localhost
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+    
+  vars_files:
+    - ./vars.yml
+    - ./secret.yml      
+    
+  tasks: 
+    - name: Ensure AWS S3 bucket name is known
+      shell: aws s3api list-buckets --region '{{EC2_REGION}}' | grep "\"Name\"" | cut -d ":" -f2 | cut -d "," -f1 | cut -d '"' -f2
+      register: s3_bucket_name
+
+    - debug: 
+        var: s3_bucket_name.stdout
+
+    - name: Ensure AWS RDS DNS name is known
+      shell: aws rds describe-db-instances --region '{{EC2_REGION}}' | grep Address | cut -d ":" -f2 | cut -d ',' -f1
+      register: rds_dns_name
+
+    - debug: 
+        var: rds_dns_name.stdout
+   
+    - name: Ensure AWS S3 access point arn is known
+      shell: aws s3control list-access-points --region '{{EC2_REGION}}' --bucket '{{s3_bucket_name.stdout}}' --account-id '{{VAULT_AWS_ACCOUNT_ID}}' | grep "AccessPointArn" | cut -d ':' -f2,3,4,5,6,7 | cut -d ',' -f1 | sed -r 's/[/]/:/g' | sed -r 's/"/'\''/g'
+      register: api_s3_arn
+
+    - debug: 
+        var: api_s3_arn.stdout
+
+- hosts: aws_ec2
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+    
+  vars_files:
+     - ./vars.yml
+     - ./secret.yml      
+
+  tasks: 
+    - name: Ensure local GIT archive is removed	
+      become: true
+      file:
+        path: '{{EC2_GIT_DIRECTORY}}'
+        state: absent
+
+    - name: Ensure local website is removed	
+      become: true
+      command: rm -fR /var/www/html/*
+
+    - name: Ensure local website is accessible
+      become: true
+      command: chown -R ec2-user /var/www/html
+     
+    - name: Ensure GIT archive is cloned
+      git: >
+        repo='{{EC2_GIT_REPO}}'
+        dest='{{EC2_GIT_DIRECTORY}}'
+    - name: Ensure RDS DNS name is replaced in config.php
+      replace:
+        dest: '{{EC2_GIT_DIRECTORY}}/config.php'
+        regexp: 'RDS_SERVER_NAME'
+        replace: "{{ hostvars['localhost']['rds_dns_name']['stdout'] }}"
+      
+    - name: Ensure S3 access point arn is replaced in index.php
+      replace:
+        dest: '{{EC2_GIT_DIRECTORY}}/index.php'
+        regexp: 'S3_AP_ARN'
+        replace: "{{ hostvars['localhost']['api_s3_arn']['stdout'] }}"  
+        
+    - name: Ensure the AWS PHP SDK is installed
+      command: chdir='{{EC2_GIT_DIRECTORY}}' composer require aws/aws-sdk-php
+    
+    - name: Ensure composer update is executed
+      command: chdir='{{EC2_GIT_DIRECTORY}}' composer update
+      
+    - name: Ensure composer install is executed
+      command: chdir='{{EC2_GIT_DIRECTORY}}' composer install
+      
+    - name: Ensure composer dump-autoload is executed
+      command: chdir='{{EC2_GIT_DIRECTORY}}' composer dump-autoload
+              
+    - name: Ensure unit tests are executed
+      command: chdir='{{EC2_GIT_DIRECTORY}}' vendor/bin/phpunit tests
+              
+    - name: Ensure archive is copied to website
+      copy: 
+        src: '{{EC2_GIT_DIRECTORY}}/'
+        dest: /var/www/html/         
+        remote_src: yes
+        directory_mode: yes
+        
+    - name: Ensure composer update is executed on website
+      command: composer update -d /var/www/html/
+      
+    - name: Ensure httpd services is restarted
+      become: true
+      service:
+       name: httpd
+       state: restarted      
+      
+       

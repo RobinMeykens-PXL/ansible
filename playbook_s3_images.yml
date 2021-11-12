@@ -1,0 +1,61 @@
+---
+- hosts: localhost
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+    
+  vars_files:
+    - ./vars.yml
+    - ./secret.yml      
+    
+  tasks: 
+    - name: Ensure AWS S3 bucket name is known
+      shell: aws s3api list-buckets --region '{{EC2_REGION}}' | grep "\"Name\"" | cut -d ":" -f2 | cut -d "," -f1 | cut -d '"' -f2
+      register: s3_bucket_name
+
+    - debug: 
+        var: s3_bucket_name.stdout
+
+- hosts: aws_ec2
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+
+  vars_files:
+    - ./vars.yml
+    - ./secret.yml      
+    
+  become: true
+  tasks:  
+    - name: Ensure pip is installed
+      yum:
+        name: python3-pip
+      run_once: yes
+      
+    - name: Ensure ansible is installed
+      become: yes
+      pip:
+        executable: /usr/bin/pip3
+        name:
+          - ansible
+        extra_args: --user
+      run_once: yes
+              
+    - name: Ensure boto is installed
+      become: yes
+      pip:
+        executable: /usr/bin/pip3
+        name:
+          - boto3
+          - botocore 
+        extra_args: --user          
+      run_once: yes
+
+    - name: Ensure .JPG files are copied to S3 bucket
+      s3_sync:
+        bucket:  "{{ hostvars['localhost']['s3_bucket_name']['stdout'] }}"
+        file_root: '{{EC2_GIT_DIRECTORY}}'
+        key_prefix: ""
+        file_change_strategy: force
+        include: "*.jpg"
+        permission: public-read
+        mode: push 
+      run_once: yes

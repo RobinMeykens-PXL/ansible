@@ -1,0 +1,50 @@
+---
+- hosts: localhost
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python2"
+    
+  vars_files:
+    - ./vars.yml
+    - ./secret.yml      
+    
+  tasks: 
+    - name: Ensure AWS RDS DNS name is known
+      shell: aws rds describe-db-instances --region '{{EC2_REGION}}' | grep Address | cut -d ":" -f2 | cut -d ',' -f1 | cut -d '"' -f2
+      register: rds_dns_name
+
+    - debug: 
+        var: rds_dns_name.stdout
+
+- hosts: aws_ec2
+  become: true
+
+  vars_files:
+    - ./secret.yml
+    - ./vars.yml
+
+  vars:
+    conn_details:
+      - { host: "{{hostvars['localhost']['rds_dns_name']['stdout']}}", user: '{{VAULT_DB_MYSQL_USER}}', password: '{{VAULT_DB_MYSQL_PASSWORD}}' }
+    db_script_file: "'{{ EC2_HOME_DIRECTORY }}'/db_script.sql"
+    ansible_python_interpreter: "/usr/bin/python2"
+    
+  tasks:
+    - name: Ensure db_script.sql is copied
+      become: true 
+      copy:
+        src: db_script.sql
+        dest: "{{EC2_HOME_DIRECTORY}}/"
+      run_once: true        
+      
+    - name: Ensure sql script is executed
+      shell: "mysql -h {{ item.host }} -u {{ item.user }} -p{{ item.password }} < {{ db_script_file }}"
+      with_items: "{{ conn_details }}"
+      register: sql_query_output
+      async: 600
+      poll: 0
+      run_once: true 
+      
+    - name: Ensure httpd services is restarted
+      service:
+       name: httpd
+       state: restarted
